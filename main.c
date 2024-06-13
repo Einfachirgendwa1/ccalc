@@ -110,6 +110,9 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
             }
         }
     }
+    if (!numbuf_init) {
+        return err_res("Expression erwartet, aber nichts gefunden.");
+    }
     return val_res(numbuf);
 }
 
