@@ -80,7 +80,7 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
         if (c >= '0' && c <= '9') {
             numbuf_init = true;
             numbuf += (uint32_t)(c - '0') * exp;
-            exp += 10;
+            exp *= 10;
         } else {
             Result *right_res;
             double right_value;
