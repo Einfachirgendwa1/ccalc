@@ -8,6 +8,8 @@
 
 #define EPSILON 1e-9
 
+#define FEQ(left, right) fabs(left - right) < EPSILON
+
 #pragma clang diagnostic warning "-Weverything"
 #pragma clang diagnostic ignored "-Wpadded"
 #pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
@@ -101,7 +103,7 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
             case '*':
                 return val_res(numbuf * right_value);
             case '/':
-                if (fabs(right_value - 0.0) < EPSILON) {
+                if (FEQ(right_value, 0.0)) {
                     return err_res("Division durch 0");
                 }
                 return val_res(numbuf / right_value);
