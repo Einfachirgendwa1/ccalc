@@ -58,7 +58,7 @@ static Result *val_res(double val) {
 }
 
 static Result *err_res(char *msg) {
-    uint64_t len = strlen(msg);
+    uint64_t len = strlen(msg) + 1;
     Result *new = malloc(sizeof(Result));
     new->type = Error;
     new->val = malloc(len * sizeof(char));
