@@ -1,9 +1,12 @@
 #include <ctype.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define EPSILON 1e-9
 
 #pragma clang diagnostic warning "-Weverything"
 #pragma clang diagnostic ignored "-Wpadded"
@@ -98,6 +101,9 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
             case '*':
                 return val_res(numbuf * right_value);
             case '/':
+                if (fabs(right_value - 0.0) < EPSILON) {
+                    return err_res("Division durch 0");
+                }
                 return val_res(numbuf / right_value);
             default:
                 return err_res("Unerwartes Rechenzeichen gefunden.");
