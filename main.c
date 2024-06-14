@@ -71,7 +71,7 @@ static Result *err_res(char *msg) {
 static Result *eval(char buf[32], uint32_t left, uint32_t right) {
     int32_t numbuf = 0;
     bool numbuf_init = false;
-    uint32_t exp = 1;
+    int32_t exp = 1;
     for (uint32_t idx = left; idx < right; idx++) {
         char c = buf[idx];
 
@@ -81,13 +81,22 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
 
         if (c >= '0' && c <= '9') {
             numbuf_init = true;
-            numbuf += (uint32_t)(c - '0') * exp;
+            numbuf += (c - '0') * exp;
             exp *= 10;
         } else {
             Result *right_res;
             double right_value;
             if (!numbuf_init) {
-                return err_res("Rechenzeichen ohne Zahl davor.");
+                if (c == '+') {
+                    continue;
+                }
+
+                if (c == '-') {
+                    exp *= -1;
+                    continue;
+                } else {
+                    return err_res("Rechenzeichen ohne Zahl davor.");
+                }
             }
             right_res = eval(buf, idx + 1, right);
             if (right_res->type == Error) {
@@ -97,16 +106,24 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
             destroy(right_res);
             switch (c) {
             case '+':
-                return val_res(numbuf + right_value);
+                if (numbuf_init) {
+                    return val_res(numbuf + right_value);
+                } else {
+                    return val_res(numbuf);
+                }
             case '-':
-                return val_res(numbuf - right_value);
+                if (numbuf_init) {
+                    return val_res(numbuf - right_value);
+                } else {
+                    return val_res(-numbuf);
+                }
             case '*':
                 return val_res(numbuf * right_value);
             case '/':
                 if (FEQ(right_value, 0.0)) {
                     return err_res("Division durch 0");
                 }
-                return val_res(numbuf / right_value);
+                return val_res((double)numbuf / right_value);
             default:
                 return err_res("Unerwartes Rechenzeichen gefunden.");
             }
