@@ -11,23 +11,24 @@
 #define FEQ(left, right) fabs(left - right) < EPSILON
 
 #pragma clang diagnostic warning "-Weverything"
-#pragma clang diagnostic ignored "-Wpadded"
 #pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
+#pragma clang diagnostic ignored "-Wpadded"
 
-typedef enum {
-    Double,
-    Error
-} Type;
+typedef struct Result {
+    enum Type {
+        DOUBLE,
+        ERROR
+    } type;
 
-typedef struct {
-    Type type;
-    void *val;
+    union Data {
+        double dval;
+        char *msg;
+    } data;
 } Result;
 
 static Result *val_res(double val);
 static Result *err_res(char *msg);
 static Result *eval(char *buf, uint32_t left, uint32_t right);
-inline static void destroy(Result *val);
 
 int main(void) {
     char buf[32];
@@ -42,34 +43,31 @@ int main(void) {
         buf[strlen(buf) - 1] = '\0';
         result = eval(buf, 0, (uint32_t)strlen(buf));
 
-        if (result->type == Error) {
-            printf("%s\n", (char *)result->val);
+        if (result->type == ERROR) {
+            printf("%s\n", result->data.msg);
         } else {
-            printf("%s = %f\n", buf, *(double *)result->val);
+            printf("%s = %f\n", buf, result->data.dval);
         }
-        destroy(result);
+        free(result);
     }
 }
 
 static Result *val_res(double val) {
     Result *new = malloc(sizeof(Result));
-    new->type = Double;
-    new->val = malloc(sizeof(double));
-    *(double *)new->val = val;
+    new->type = DOUBLE;
+    new->data.dval = val;
     return new;
 }
 
 static Result *err_res(char *msg) {
-    uint64_t len = strlen(msg) + 1;
     Result *new = malloc(sizeof(Result));
-    new->type = Error;
-    new->val = malloc(len * sizeof(char));
-    memcpy(new->val, msg, len);
+    new->type = ERROR;
+    new->data.msg = msg;
     return new;
 }
 
 static Result *eval(char buf[32], uint32_t left, uint32_t right) {
-    int32_t numbuf = 0;
+    double numbuf = 0;
     bool numbuf_init = false;
     int32_t exp = 1;
     for (uint32_t idx = left; idx < right; idx++) {
@@ -87,45 +85,70 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
             Result *right_res;
             double right_value;
             if (!numbuf_init) {
-                if (c == '+') {
-                    continue;
-                }
-
                 if (c == '-') {
                     exp *= -1;
                     continue;
-                } else {
+                }
+
+                if (c == '*' || c == '/') {
                     return err_res("Rechenzeichen ohne Zahl davor.");
                 }
             }
+            if (c == '(') {
+                uint32_t start = idx + 1;
+                uint32_t end;
+                Result *res;
+                while (c != ')') {
+                    c = buf[++idx];
+                    if (c == '\0') {
+                        return err_res("Klammer wurde nicht korrekt geschlossen");
+                    }
+                }
+                end = idx;
+                res = eval(buf, start, end);
+                if (!numbuf_init) {
+                    numbuf_init = true;
+                    if (res->type == ERROR) {
+                        return res;
+                    }
+                    numbuf = res->data.dval;
+                    free(res);
+                } else {
+                    if (res->type == ERROR) {
+                        return res;
+                    }
+                    return val_res(numbuf * res->data.dval);
+                }
+                continue;
+            }
             right_res = eval(buf, idx + 1, right);
-            if (right_res->type == Error) {
+            if (right_res->type == ERROR) {
                 return right_res;
             }
-            right_value = *(double *)right_res->val;
-            destroy(right_res);
+            right_value = right_res->data.dval;
+            free(right_res);
             switch (c) {
-            case '+':
-                if (numbuf_init) {
-                    return val_res(numbuf + right_value);
-                } else {
-                    return val_res(numbuf);
-                }
-            case '-':
-                if (numbuf_init) {
-                    return val_res(numbuf - right_value);
-                } else {
-                    return val_res(-numbuf);
-                }
-            case '*':
-                return val_res(numbuf * right_value);
-            case '/':
-                if (FEQ(right_value, 0.0)) {
-                    return err_res("Division durch 0");
-                }
-                return val_res((double)numbuf / right_value);
-            default:
-                return err_res("Unerwartes Rechenzeichen gefunden.");
+                case '+':
+                    if (numbuf_init) {
+                        return val_res(numbuf + right_value);
+                    } else {
+                        return val_res(numbuf);
+                    }
+                case '-':
+                    if (numbuf_init) {
+                        return val_res(numbuf - right_value);
+                    } else {
+                        return val_res(-numbuf);
+                    }
+                case '*':
+                    return val_res(numbuf * right_value);
+                case '/':
+                    if (FEQ(right_value, 0.0)) {
+                        return err_res("Division durch 0");
+                    }
+                    return val_res((double)numbuf / right_value);
+                default:
+                    return err_res("Unerwartes Rechenzeichen gefunden.");
             }
         }
     }
@@ -133,9 +156,4 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
         return err_res("Expression erwartet, aber nichts gefunden.");
     }
     return val_res(numbuf);
-}
-
-inline static void destroy(Result *val) {
-    free(val->val);
-    free(val);
 }

@@ -1,5 +1,5 @@
 default:
-	@gcc -g -pipe main.c -o binary
+	@clang -g -pipe main.c -o binary
 	@./binary
 
 clean:
