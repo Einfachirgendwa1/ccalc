@@ -96,7 +96,6 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
             }
             if (c == '(') {
                 uint32_t start = idx + 1;
-                uint32_t end;
                 Result *res;
                 while (c != ')') {
                     c = buf[++idx];
@@ -104,8 +103,7 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
                         return err_res("Klammer wurde nicht korrekt geschlossen");
                     }
                 }
-                end = idx;
-                res = eval(buf, start, end);
+                res = eval(buf, start, idx);
                 if (!numbuf_init) {
                     numbuf_init = true;
                     if (res->type == ERROR) {
