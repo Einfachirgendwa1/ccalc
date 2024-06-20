@@ -129,9 +129,9 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
             free(right_res);
             switch (c) {
                 case '+':
-                    return numbuf_init ? val_res(numbuf + right_value) : val_res(numbuf);
+                    return val_res(numbuf + right_value);
                 case '-':
-                    return numbuf_init ? val_res(numbuf - right_value) : val_res(-numbuf);
+                    return val_res(numbuf - right_value);
                 case '*':
                     return val_res(numbuf * right_value);
                 case '/':
