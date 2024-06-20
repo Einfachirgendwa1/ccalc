@@ -67,9 +67,13 @@ static Result *err_res(char *msg) {
 }
 
 static Result *eval(char buf[32], uint32_t left, uint32_t right) {
-    double numbuf = 0;
-    bool numbuf_init = false;
+    struct {
+        double dval;
+        bool exists;
+    } left_value = {0, false};
+
     int32_t exp = 1;
+
     for (uint32_t idx = left; idx < right; idx++) {
         char c = buf[idx];
 
@@ -78,13 +82,13 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
         }
 
         if (c >= '0' && c <= '9') {
-            numbuf_init = true;
-            numbuf += (c - '0') * exp;
+            left_value.exists = true;
+            left_value.dval += (c - '0') * exp;
             exp *= 10;
         } else {
             Result *right_res;
             double right_value;
-            if (!numbuf_init) {
+            if (!left_value.exists) {
                 if (c == '-') {
                     exp *= -1;
                     continue;
@@ -104,18 +108,14 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
                     }
                 }
                 res = eval(buf, start, idx);
-                if (!numbuf_init) {
-                    numbuf_init = true;
-                    if (res->type == ERROR) {
-                        return res;
-                    }
-                    numbuf = res->data.dval;
-                    free(res);
+                if (res->type == ERROR) {
+                    return res;
+                }
+                if (!left_value.exists) {
+                    return val_res(left_value.dval * res->data.dval);
                 } else {
-                    if (res->type == ERROR) {
-                        return res;
-                    }
-                    return val_res(numbuf * res->data.dval);
+                    left_value.dval = res->data.dval;
+                    free(res);
                 }
                 continue;
             }
@@ -127,23 +127,23 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
             free(right_res);
             switch (c) {
                 case '+':
-                    return val_res(numbuf + right_value);
+                    return val_res(left_value.dval + right_value);
                 case '-':
-                    return val_res(numbuf - right_value);
+                    return val_res(left_value.dval - right_value);
                 case '*':
-                    return val_res(numbuf * right_value);
+                    return val_res(left_value.dval * right_value);
                 case '/':
                     if (FEQ(right_value, 0.0)) {
                         return err_res("Division durch 0");
                     }
-                    return val_res((double)numbuf / right_value);
+                    return val_res(left_value.dval / right_value);
                 default:
                     return err_res("Unerwartes Rechenzeichen gefunden.");
             }
         }
     }
-    if (!numbuf_init) {
+    if (!left_value.exists) {
         return err_res("Expression erwartet, aber nichts gefunden.");
     }
-    return val_res(numbuf);
+    return val_res(left_value.dval);
 }
