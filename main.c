@@ -15,12 +15,12 @@
 #pragma clang diagnostic ignored "-Wpadded"
 
 typedef struct Result {
-    enum Type {
+    enum {
         DOUBLE,
         ERROR
     } type;
 
-    union Data {
+    union {
         double dval;
         char *msg;
     } data;
@@ -129,17 +129,9 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
             free(right_res);
             switch (c) {
                 case '+':
-                    if (numbuf_init) {
-                        return val_res(numbuf + right_value);
-                    } else {
-                        return val_res(numbuf);
-                    }
+                    return numbuf_init ? val_res(numbuf + right_value) : val_res(numbuf);
                 case '-':
-                    if (numbuf_init) {
-                        return val_res(numbuf - right_value);
-                    } else {
-                        return val_res(-numbuf);
-                    }
+                    return numbuf_init ? val_res(numbuf - right_value) : val_res(-numbuf);
                 case '*':
                     return val_res(numbuf * right_value);
                 case '/':
