@@ -42,13 +42,6 @@
     for (uint32_t didx = left; didx <= right; didx++) { \
         printf("%c", buf[didx]);                        \
     }
-#define PREEVAL(buf, idx, ...)                                          \
-    evalcallstack++;                                                    \
-    DEBUGPRINT("Calle Eval%s...", __VA_ARGS__ == 0 ? "" : __VA_ARGS__); \
-    while (isspace(buf[idx])) {                                         \
-        idx++;                                                          \
-    }
-#define POSTEVAL evalcallstack--
 
 #define RETURNERROR(x)                                  \
     DEBUGPRINT("Fehler aufgetreten, returne Error..."); \
@@ -82,7 +75,8 @@ typedef struct Result {
 
 static Result *val_res(double val);
 static Result *err_res(char *msg);
-static Result *eval(char *buf, uint32_t left, uint32_t right);
+static Result *direct_eval(char *buf, uint32_t left, uint32_t right);
+static Result *eval(char *buf, uint32_t left, uint32_t right, char reason[]);
 
 int main(void) {
     char buf[32];
@@ -101,9 +95,7 @@ int main(void) {
         TERM;
         buf[strlen(buf) - 1] = '\0';
 
-        PREEVAL(buf, idx, 0);
-        result = eval(buf, idx, (uint32_t)strlen(buf));
-        POSTEVAL;
+        result = eval(buf, idx, (uint32_t)strlen(buf), "");
 
         if (result->type == DOUBLE) {
             GREEN;
@@ -131,7 +123,27 @@ static Result *err_res(char *msg) {
     return new;
 }
 
-static Result *eval(char buf[32], uint32_t left, uint32_t right) {
+static Result *eval(char *buf, uint32_t left, uint32_t right, char reason[]) {
+    Result *res;
+    evalcallstack++;
+    if (DEBUG) {
+        DBGSTART;
+        printf("Calle Eval");
+        if (reason[0] != '\0') {
+            printf("%s", reason);
+        }
+        printf("...");
+        COLOREND;
+    }
+    while (isspace(buf[left])) {
+        left++;
+    }
+    res = direct_eval(buf, left, right);
+    evalcallstack--;
+    return res;
+}
+
+static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
     struct {
         double dval;
         bool exists;
@@ -181,9 +193,7 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
                         RETURNERROR("Klammer wurde nicht korrekt geschlossen");
                     }
                 }
-                PREEVAL(buf, start, " um das Innere der Klammer auszurechnen");
-                res = eval(buf, start, idx - 1);
-                POSTEVAL;
+                res = eval(buf, start, idx - 1, " um das Innere der Klammer auszurechnen");
                 if (res->type == ERROR) {
                     return res;
                 }
@@ -207,9 +217,7 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
                 RETURNVALUE(left_value.dval);
             }
             idx++;
-            PREEVAL(buf, idx, " um die rechte Seite der Rechnung herauszufinden");
-            right_res = eval(buf, idx, right);
-            POSTEVAL;
+            right_res = eval(buf, idx, right, " um die rechte Seite der Rechnung herauszufinden");
             if (right_res->type == ERROR) {
                 return right_res;
             }
