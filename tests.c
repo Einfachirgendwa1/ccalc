@@ -39,11 +39,11 @@ int main(void) {
     debuglevel = 1;
     for (uint32_t trace = 0; trace < sizeof(coks) / sizeof(coks[0]) + sizeof(cerrs) / sizeof(cerrs[0]); trace++) {
         if (btraces[trace][0] != '\0') {
-            printf("==== %s ====\n", btraces[trace]);
             if (!traced) {
                 printf("\n\nDebug Logs:\n");
                 traced = true;
             }
+            printf("==== %s ====\n", btraces[trace]);
             evalcallstack = 0;
             free(eval(btraces[trace], 0, (uint32_t)strlen(btraces[trace]), "Debug Traceback"));
             printf("==== %s ====\n\n", btraces[trace]);
