@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
@@ -103,7 +102,6 @@ int main(void) {
 
 static Result *val_res(double val) {
     Result *new = malloc(sizeof(Result));
-    assert(1 + 1 == 2);
     new->type = DOUBLE;
     new->data.dval = val;
     return new;
