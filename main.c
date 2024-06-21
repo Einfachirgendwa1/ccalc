@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DEBUG true
+#define DEBUGLEVEL 1
 
 #define TERM printf("\033[0m")
 
@@ -16,39 +16,39 @@
 #define GREEN printf("\033[32m")
 #define CYAN printf("\033[36m")
 
-#define DBGSTART                                                                  \
-    YELLOW;                                                                       \
-    switch (evalcallstack) {                                                      \
-        case 0:                                                                   \
-            printf("%d in %s main\t: DEBUG ", __LINE__, __FILE__);                \
-            break;                                                                \
-        case 1:                                                                   \
-            printf("%d in %s eval\t: DEBUG ", __LINE__, __FILE__);                \
-            break;                                                                \
-        default:                                                                  \
-            printf("%d in %s %d\t\t: DEBUG ", __LINE__, __FILE__, evalcallstack); \
-            break;                                                                \
+#define DBGSTART                                                                         \
+    YELLOW;                                                                              \
+    switch (evalcallstack) {                                                             \
+        case 0:                                                                          \
+            printf("%d in %s in func main\t DEBUG ", __LINE__, __FILE__);                \
+            break;                                                                       \
+        case 1:                                                                          \
+            printf("%d in %s in func eval\t DEBUG ", __LINE__, __FILE__);                \
+            break;                                                                       \
+        default:                                                                         \
+            printf("%d in %s in eval %d\t\t DEBUG ", __LINE__, __FILE__, evalcallstack); \
+            break;                                                                       \
     }
 #define COLOREND \
     TERM;        \
     printf("\n")
-#define DEBUGPRINT(...)      \
-    if (DEBUG) {             \
-        DBGSTART;            \
-        printf(__VA_ARGS__); \
-        COLOREND;            \
+#define DEBUGPRINT(level, ...) \
+    if (DEBUGLEVEL >= level) { \
+        DBGSTART;              \
+        printf(__VA_ARGS__);   \
+        COLOREND;              \
     }
 #define PRINTBUFFERAREA(left, right, buf)               \
     for (uint32_t didx = left; didx <= right; didx++) { \
         printf("%c", buf[didx]);                        \
     }
 
-#define RETURNERROR(x)                                  \
-    DEBUGPRINT("Fehler aufgetreten, returne Error..."); \
+#define RETURNERROR(x)                                     \
+    DEBUGPRINT(1, "Fehler aufgetreten, returne Error..."); \
     return err_res(x)
 
-#define RETURNVALUE(x)           \
-    DEBUGPRINT("Returne %f", x); \
+#define RETURNVALUE(x)              \
+    DEBUGPRINT(1, "Returne %f", x); \
     return val_res(x)
 
 #define EPSILON 1e-9
@@ -84,8 +84,9 @@ int main(void) {
     Result *result;
     uint32_t idx = 0;
 
-    DEBUGPRINT("Debugprinting ist aktiviert.")
+    DEBUGPRINT(1, "Debugprinting ist auf Level %d", DEBUGLEVEL);
     while (1) {
+        evalcallstack = 0;
         CYAN;
         printf(" > ");
         if (fgets(buf, sizeof(buf), stdin) == 0) {
@@ -127,7 +128,7 @@ static Result *err_res(char *msg) {
 static Result *eval(char *buf, uint32_t left, uint32_t right, char reason[]) {
     Result *res;
     evalcallstack++;
-    if (DEBUG) {
+    if (DEBUGLEVEL >= 1) {
         DBGSTART;
         printf("Calle Eval");
         if (reason[0] != '\0') {
@@ -150,11 +151,9 @@ static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
         bool exists;
     } left_value = {0, false};
 
-    int32_t exp = 1;
-
     assert(left <= right);
 
-    if (DEBUG) {
+    if (DEBUGLEVEL >= 1) {
         DBGSTART;
         printf("Evaluating ");
         PRINTBUFFERAREA(left, right, buf);
@@ -170,26 +169,32 @@ static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
 
         if (c >= '0' && c <= '9') {
             left_value.exists = true;
-            left_value.dval += (c - '0') * exp;
-            exp *= 10;
+            DEBUGPRINT(2, "========= CHARNUM START =========");
+            DEBUGPRINT(2, "CHAR %c", c);
+            DEBUGPRINT(2, "PRE  left_value.dval = %f", left_value.dval);
+            left_value.dval *= 10;
+            left_value.dval += (c - '0');
+            DEBUGPRINT(2, "POST left_value.dval = %f", left_value.dval);
+            DEBUGPRINT(2, "========= CHARNUM STOP  =========");
         } else {
             Result *right_res;
             double right_value;
             if (!left_value.exists) {
                 if (c == '-') {
-                    exp *= -1;
+                    left_value.dval *= -1;
+                    DEBUGPRINT(2, "Minuszeichen gefunden, left_value.dval = %f", left_value.dval);
                     continue;
                 }
 
                 if (c == '*' || c == '/') {
-                    DEBUGPRINT("%c", c);
+                    DEBUGPRINT(1, "%c", c);
                     RETURNERROR("Rechenzeichen ohne Zahl davor.");
                 }
             }
             if (c == '(') {
                 uint32_t start = idx + 1;
                 Result *res;
-                DEBUGPRINT("Klammer gefunden.");
+                DEBUGPRINT(1, "Klammer gefunden.");
                 while (c != ')') {
                     c = buf[++idx];
                     if (c == '\0') {
@@ -200,11 +205,11 @@ static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
                 if (res->type == ERROR) {
                     return res;
                 }
-                DEBUGPRINT("Klammer Evaluation returnt %f", res->data.dval);
+                DEBUGPRINT(1, "Klammer Evaluation returnt %f", res->data.dval);
                 if (left_value.exists) {
                     double data = res->data.dval;
                     free(res);
-                    DEBUGPRINT("Implizierte Klammermultiplikation.");
+                    DEBUGPRINT(1, "Implizierte Klammermultiplikation.");
                     RETURNVALUE(left_value.dval * data);
                 } else {
                     left_value.dval = res->data.dval;
@@ -215,8 +220,15 @@ static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
             }
             evalcallstack += 1;
             if (idx + 1 >= right) {
-                DEBUGPRINT("Ende der Eingabe gefunden, returne gesammelte Zahl.");
-                assert(left_value.exists);
+                if (idx == right && buf[idx] >= '0' && buf[idx] <= '9') {
+                    left_value.exists = true;
+                    left_value.dval *= 10;
+                    left_value.dval += (c - '0');
+                }
+                DEBUGPRINT(1, "Ende der Eingabe gefunden, returne gesammelte Zahl.");
+                if (!left_value.exists) {
+                    RETURNERROR("Unbekanntes Zeichen gefunden.");
+                }
                 RETURNVALUE(left_value.dval);
             }
             idx++;
@@ -224,15 +236,15 @@ static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
             if (right_res->type == ERROR) {
                 return right_res;
             }
-            if (DEBUG) {
+            if (DEBUGLEVEL >= 1) {
                 DBGSTART
                 PRINTBUFFERAREA(idx, right, buf)
-                printf(" returnt %f", right_res->data.dval);
+                printf("returnt %f", right_res->data.dval);
                 COLOREND;
             }
             right_value = right_res->data.dval;
             free(right_res);
-            DEBUGPRINT("%f %c %f", right_value, c, left_value.dval)
+            DEBUGPRINT(1, "%f %c %f", right_value, c, left_value.dval)
             switch (c) {
                 case '+':
                     RETURNVALUE(left_value.dval + right_value);
