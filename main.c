@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
@@ -37,6 +38,15 @@
         printf(__VA_ARGS__); \
         COLOREND;            \
     }
+#define PRINTBUFFERAREA(left, right, buf)               \
+    for (uint32_t didx = left; didx <= right; didx++) { \
+        printf("%c", buf[didx]);                        \
+    }
+#define PREEVAL(buf, idx, ...)                                          \
+    DEBUGPRINT("Calle Eval%s...", __VA_ARGS__ == 0 ? "" : __VA_ARGS__); \
+    while (isspace(buf[idx])) {                                         \
+        idx++;                                                          \
+    }
 
 #define RETURNERROR(x)                                  \
     DEBUGPRINT("Fehler aufgetreten, returne Error..."); \
@@ -53,7 +63,7 @@
 #pragma clang diagnostic warning "-Weverything"
 #pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
 #pragma clang diagnostic ignored "-Wpadded"
-
+#pragma clang diagnostic ignored "-Wextra-semi-stmt"
 static int evalcallstack = 0;
 
 typedef struct Result {
@@ -75,6 +85,7 @@ static Result *eval(char *buf, uint32_t left, uint32_t right);
 int main(void) {
     char buf[32];
     Result *result;
+    uint32_t idx = 0;
 
     DEBUGPRINT("Debugprinting ist aktiviert.")
     while (1) {
@@ -86,7 +97,9 @@ int main(void) {
         }
         TERM;
         buf[strlen(buf) - 1] = '\0';
-        result = eval(buf, 0, (uint32_t)strlen(buf));
+
+        PREEVAL(buf, idx, 0);
+        result = eval(buf, idx, (uint32_t)strlen(buf));
 
         if (result->type == DOUBLE) {
             GREEN;
@@ -122,7 +135,14 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
 
     int32_t exp = 1;
 
-    for (uint32_t idx = left; idx < right; idx++) {
+    assert(left <= right);
+
+    DBGSTART;
+    printf("Evaluating ");
+    PRINTBUFFERAREA(left, right, buf);
+    COLOREND;
+
+    for (uint32_t idx = left; idx <= right; idx++) {
         char c = buf[idx];
 
         if (isspace(c)) {
@@ -143,14 +163,14 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
                 }
 
                 if (c == '*' || c == '/') {
-                    DEBUGPRINT("%c", c)
+                    DEBUGPRINT("%c", c);
                     RETURNERROR("Rechenzeichen ohne Zahl davor.");
                 }
             }
             if (c == '(') {
                 uint32_t start = idx + 1;
                 Result *res;
-                DEBUGPRINT("Klammer gefunden.")
+                DEBUGPRINT("Klammer gefunden.");
                 while (c != ')') {
                     c = buf[++idx];
                     if (c == '\0') {
@@ -158,16 +178,17 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
                     }
                 }
                 evalcallstack += 1;
-                res = eval(buf, start, idx);
+                PREEVAL(buf, start, " um das Innere der Klammer auszurechnen");
+                res = eval(buf, start, idx - 1);
                 evalcallstack -= 1;
                 if (res->type == ERROR) {
                     return res;
                 }
-                DEBUGPRINT("Klammer Evaluation returnt %f", res->data.dval)
+                DEBUGPRINT("Klammer Evaluation returnt %f", res->data.dval);
                 if (left_value.exists) {
                     double data = res->data.dval;
                     free(res);
-                    DEBUGPRINT("Implizieter Klammer return.")
+                    DEBUGPRINT("Implizieter Klammer return.");
                     RETURNVALUE(left_value.dval * data);
                 } else {
                     left_value.dval = res->data.dval;
@@ -177,16 +198,21 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
                 continue;
             }
             evalcallstack += 1;
-            right_res = eval(buf, idx + 1, right);
+            if (idx + 1 >= right) {
+                DEBUGPRINT("Ende der Eingabe gefunden, returne gesammelte Zahl.");
+                assert(left_value.exists);
+                RETURNVALUE(left_value.dval);
+            }
+            idx++;
+            PREEVAL(buf, idx, " um die rechte Seite der Rechnung herauszufinden");
+            right_res = eval(buf, idx, right);
             evalcallstack -= 1;
             if (right_res->type == ERROR) {
                 return right_res;
             }
             if (DEBUG) {
                 DBGSTART
-                for (uint32_t didx = idx + 1; didx <= right; didx++) {
-                    printf("%c", buf[didx]);
-                }
+                PRINTBUFFERAREA(idx, right, buf)
                 printf(" returnt %f", right_res->data.dval);
                 COLOREND;
             }
