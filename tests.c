@@ -15,48 +15,46 @@ int main(void) {
     struct {
         char *calc;
         double expected;
-        bool trace;
-    } coks[] = {{"1 + 1", 2, false},
-                {"(1 + 1)", 2, false},
-                {"(-1 + 1)", 0, false},
-                {"(-4 * 3)", -12, false},
-                {"(1 + 1) / 4", 0.5, false},
-                {"4(1 + 1)", 8, false},
-                {"(1 + 1)4", 8, false}};
-    struct {
-        char *calc;
-        bool trace;
-    } cerrs[] = {{"(1 + 1) / ", false},
-                 {"(1 + 1) / 0", false}};
+    } coks[] = {{"1 + 1", 2},
+                {"(1 + 1)", 2},
+                {"(-1 + 1)", 0},
+                {"(-4 * 3)", -12},
+                {"(1 + 1) / 4", 0.5},
+                {"4(1 + 1)", 8},
+                {"(1 + 1)4", 8}};
 
-    bool traces = false;
+    char *cerrs[] = {
+        "(1 + 1) / ",
+        "(1 + 1) / 0"};
+
+    char *btraces[sizeof(coks) / sizeof(coks[0]) + sizeof(cerrs) / sizeof(cerrs[0])];
+    bool traced = false;
+
     for (uint32_t ok = 0; ok < sizeof(coks) / sizeof(coks[0]); ok++) {
-        coks[ok].trace = res_assert_ok(coks[ok].calc, coks[ok].expected);
-        traces = traces || coks[ok].trace;
+        btraces[ok] = res_assert_ok(coks[ok].calc, coks[ok].expected) ? coks[ok].calc : "";
     }
     for (uint32_t err = 0; err < sizeof(cerrs) / sizeof(cerrs[0]); err++) {
-        cerrs[err].trace = res_assert_err(cerrs[err].calc);
-        traces = traces || cerrs[err].trace;
+        btraces[sizeof(coks) / sizeof(coks[0]) + err] = res_assert_err(cerrs[err]) ? cerrs[err] : "";
     }
-    if (!traces) {
-        return EXIT_SUCCESS;
-    }
-    printf("\n\nDebuglogs:\n");
     debuglevel = 1;
-    for (uint32_t ok = 0; ok < sizeof(coks) / sizeof(coks[0]); ok++) {
-        if (coks[ok].trace) {
-            printf("==== %s ====\n", coks[ok].calc);
-            eval(coks[ok].calc, 0, (uint32_t)strlen(coks[ok].calc) - 1, "Debug Backtrace");
-            printf("==== %s ====\n\n", coks[ok].calc);
-        }
-    }
-    for (uint32_t err = 0; err < sizeof(cerrs) / sizeof(cerrs[0]); err++) {
-        if (coks[err].trace) {
-            eval(coks[err].calc, 0, (uint32_t)strlen(coks[err].calc) - 1, "Debug Backtrace");
+    for (uint32_t trace = 0; trace < sizeof(coks) / sizeof(coks[0]) + sizeof(cerrs) / sizeof(cerrs[0]); trace++) {
+        if (btraces[trace][0] != '\0') {
+            printf("==== %s ====\n", btraces[trace]);
+            if (!traced) {
+                printf("\n\nDebug Logs:\n");
+                traced = true;
+            }
+            evalcallstack = 0;
+            free(eval(btraces[trace], 0, (uint32_t)strlen(btraces[trace]), "Debug Traceback"));
+            printf("==== %s ====\n\n", btraces[trace]);
         }
     }
 
-    return EXIT_FAILURE;
+    if (!traced) {
+        printf("Tests erfolgreich!\n");
+    }
+
+    return traced;
 }
 
 static bool res_assert_ok(char *buf, double val) {
