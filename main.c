@@ -59,7 +59,8 @@
 #pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
 #pragma clang diagnostic ignored "-Wpadded"
 #pragma clang diagnostic ignored "-Wextra-semi-stmt"
-static int evalcallstack = 0;
+
+static uint32_t evalcallstack = 0;
 
 typedef struct Result {
     enum {
