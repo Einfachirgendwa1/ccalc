@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DEBUG false
+#define DEBUG true
 
 #define TERM printf("\033[0m")
 
@@ -42,6 +42,10 @@
 #define RETURNERROR(x)                                  \
     DEBUGPRINT("Fehler aufgetreten, returne Error..."); \
     return err_res(x)
+
+#define RETURNVALUE(x)           \
+    DEBUGPRINT("Returne %f", x); \
+    return val_res(x)
 
 #define EPSILON 1e-9
 
@@ -166,7 +170,7 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
                     double data = res->data.dval;
                     free(res);
                     DEBUGPRINT("Implizieter Klammer return.")
-                    return val_res(left_value.dval * data);
+                    RETURNVALUE(left_value.dval * data);
                 } else {
                     left_value.dval = res->data.dval;
                     left_value.exists = true;
@@ -193,16 +197,16 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
             DEBUGPRINT("%f %c %f", right_value, c, left_value.dval)
             switch (c) {
                 case '+':
-                    return val_res(left_value.dval + right_value);
+                    RETURNVALUE(left_value.dval + right_value);
                 case '-':
-                    return val_res(left_value.dval - right_value);
+                    RETURNVALUE(left_value.dval - right_value);
                 case '*':
-                    return val_res(left_value.dval * right_value);
+                    RETURNVALUE(left_value.dval * right_value);
                 case '/':
                     if (FEQ(right_value, 0.0)) {
                         RETURNERROR("Division durch 0");
                     }
-                    return val_res(left_value.dval / right_value);
+                    RETURNVALUE(left_value.dval / right_value);
                 default:
                     RETURNERROR("Unerwartes Rechenzeichen gefunden.");
             }
@@ -211,5 +215,5 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
     if (!left_value.exists) {
         RETURNERROR("Expression erwartet, aber nichts gefunden.");
     }
-    return val_res(left_value.dval);
+    RETURNVALUE(left_value.dval);
 }
