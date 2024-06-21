@@ -153,10 +153,12 @@ static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
 
     assert(left <= right);
 
-    DBGSTART;
-    printf("Evaluating ");
-    PRINTBUFFERAREA(left, right, buf);
-    COLOREND;
+    if (DEBUG) {
+        DBGSTART;
+        printf("Evaluating ");
+        PRINTBUFFERAREA(left, right, buf);
+        COLOREND;
+    }
 
     for (uint32_t idx = left; idx <= right; idx++) {
         char c = buf[idx];
