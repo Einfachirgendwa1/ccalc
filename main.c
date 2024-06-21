@@ -92,6 +92,7 @@ int main(void) {
         CYAN;
         printf(" > ");
         if (fgets(buf, sizeof(buf), stdin) == 0) {
+            TERM;
             printf("\n");
             return 0;
         }
@@ -188,7 +189,7 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
                 if (left_value.exists) {
                     double data = res->data.dval;
                     free(res);
-                    DEBUGPRINT("Implizieter Klammer return.");
+                    DEBUGPRINT("Implizierte Klammermultiplikation.");
                     RETURNVALUE(left_value.dval * data);
                 } else {
                     left_value.dval = res->data.dval;
