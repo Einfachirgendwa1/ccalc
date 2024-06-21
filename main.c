@@ -43,10 +43,12 @@
         printf("%c", buf[didx]);                        \
     }
 #define PREEVAL(buf, idx, ...)                                          \
+    evalcallstack++;                                                    \
     DEBUGPRINT("Calle Eval%s...", __VA_ARGS__ == 0 ? "" : __VA_ARGS__); \
     while (isspace(buf[idx])) {                                         \
         idx++;                                                          \
     }
+#define POSTEVAL evalcallstack--
 
 #define RETURNERROR(x)                                  \
     DEBUGPRINT("Fehler aufgetreten, returne Error..."); \
@@ -101,6 +103,7 @@ int main(void) {
 
         PREEVAL(buf, idx, 0);
         result = eval(buf, idx, (uint32_t)strlen(buf));
+        POSTEVAL;
 
         if (result->type == DOUBLE) {
             GREEN;
@@ -178,10 +181,9 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
                         RETURNERROR("Klammer wurde nicht korrekt geschlossen");
                     }
                 }
-                evalcallstack += 1;
                 PREEVAL(buf, start, " um das Innere der Klammer auszurechnen");
                 res = eval(buf, start, idx - 1);
-                evalcallstack -= 1;
+                POSTEVAL;
                 if (res->type == ERROR) {
                     return res;
                 }
@@ -207,7 +209,7 @@ static Result *eval(char buf[32], uint32_t left, uint32_t right) {
             idx++;
             PREEVAL(buf, idx, " um die rechte Seite der Rechnung herauszufinden");
             right_res = eval(buf, idx, right);
-            evalcallstack -= 1;
+            POSTEVAL;
             if (right_res->type == ERROR) {
                 return right_res;
             }
