@@ -150,8 +150,9 @@ static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
 
     if (debuglevel >= 1) {
         DBGSTART;
-        printf("Evaluating ");
+        printf("Evaluating \"");
         PRINTBUFFERAREA(left, right, buf);
+        printf("\"");
         COLOREND;
     }
 
@@ -238,8 +239,9 @@ static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
             }
             if (debuglevel >= 1) {
                 DBGSTART;
+                printf("\"");
                 PRINTBUFFERAREA(idx, right, buf);
-                printf(" returnt %f", right_res->data.dval);
+                printf("\" returnt %f", right_res->data.dval);
                 COLOREND;
             }
             right_value = right_res->data.dval;
