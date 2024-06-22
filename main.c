@@ -13,7 +13,7 @@ int main(void) {
         uint32_t capacity;
         uint32_t size;
         char *ptr;
-    } buf = {32, 0, malloc(sizeof(char) * buf.capacity)};
+    } buf = {32, 0, calloc(buf.capacity, sizeof(char))};
     Result *result;
     uint32_t idx = 0;
 
@@ -23,12 +23,24 @@ int main(void) {
     while (1) {
         char c = 0;
         evalcallstack = 0;
-        CYAN;
 
+        debuglevel = 0;
         while (c != '\n') {
+            Result *res = eval(buf.ptr, 0, buf.size, "");
             printf("\033[2K\r");
+            CYAN;
             printf(" > %s", buf.ptr);
+            TERM;
+            if (res->type == DOUBLE) {
+                GREEN;
+                printf(" = %f", res->data.dval);
+            } else {
+                RED;
+                printf("\t%s", res->data.msg);
+            }
+            TERM;
             fflush(stdout);
+            free(res);
             if (read(STDIN_FILENO, &c, 1) == 0) {
                 restore_termbuffering();
                 printf("test");
@@ -37,7 +49,11 @@ int main(void) {
                 printf("\n");
                 return 0;
             }
-            if (c != '\n') {
+            if (c == 127) {
+                if (buf.size > 0) {
+                    buf.ptr[--buf.size] = '\0';
+                }
+            } else if (c != '\n') {
                 if (buf.size + 1 > buf.capacity) {
                     buf.capacity *= 2;
                     buf.ptr = realloc(buf.ptr, sizeof(char) * buf.capacity);
@@ -47,8 +63,9 @@ int main(void) {
                 buf.ptr[buf.size] = '\0';
             }
         }
+        debuglevel = 1;
 
-        TERM;
+        COLOREND;
 
         if (strcmp(buf.ptr, "dbg+") == 0) {
             debuglevel++;
