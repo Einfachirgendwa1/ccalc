@@ -49,10 +49,22 @@ extern uint8_t debuglevel;
         printf(__VA_ARGS__);   \
         COLOREND;              \
     }
-#define PRINTBUFFERAREA(left, right, buf)               \
-    for (uint32_t didx = left; didx <= right; didx++) { \
-        printf("%c", buf[didx]);                        \
-    }
+#define PRINTBUFFERAREA(left, right, buf) \
+    do {                                  \
+        uint32_t didx = left;             \
+        uint32_t rbound = right;          \
+        while (isspace(buf[didx])) {      \
+            didx++;                       \
+        }                                 \
+        while (isspace(buf[rbound])) {    \
+            rbound--;                     \
+        }                                 \
+        for (; didx <= rbound; didx++) {  \
+            printf("%c", buf[didx]);      \
+        }                                 \
+                                          \
+    } while (0)
+
 #define FMTBOOL(b) b ? "true" : "false"
 
 #define RETURNERROR(x)                                     \
@@ -204,7 +216,6 @@ static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
                 }
                 continue;
             }
-            evalcallstack += 1;
             if (idx + 1 >= right) {
                 if (idx == right && buf[idx] >= '0' && buf[idx] <= '9') {
                     left_value.exists = true;
@@ -224,8 +235,8 @@ static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
             }
             if (debuglevel >= 1) {
                 DBGSTART;
-                PRINTBUFFERAREA(idx, right, buf)
-                printf("returnt %f", right_res->data.dval);
+                PRINTBUFFERAREA(idx, right, buf);
+                printf(" returnt %f", right_res->data.dval);
                 COLOREND;
             }
             right_value = right_res->data.dval;
