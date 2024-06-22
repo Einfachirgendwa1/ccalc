@@ -1,6 +1,7 @@
 #include "lib.c"
 
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 uint8_t debuglevel = 1;
@@ -22,6 +23,16 @@ int main(void) {
         }
         TERM;
         buf[strlen(buf) - 1] = '\0';
+
+        if (strcmp(buf, "dbg+") == 0) {
+            debuglevel++;
+            DEBUGPRINT(0, "Debuglevel %d -> %d", debuglevel - 1, debuglevel);
+            continue;
+        } else if (strcmp(buf, "dbg-") == 0) {
+            DEBUGPRINT(0, "Debuglevel %d -> %d", debuglevel, debuglevel - 1);
+            debuglevel--;
+            continue;
+        }
 
         result = eval(buf, idx, (uint32_t)strlen(buf), "");
 
