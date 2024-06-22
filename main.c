@@ -9,11 +9,6 @@
 uint8_t debuglevel = 1;
 
 int main(void) {
-    struct {
-        uint32_t capacity;
-        uint32_t size;
-        char *ptr;
-    } buf = {32, 0, calloc(buf.capacity, sizeof(char))};
     Result *result;
     uint32_t idx = 0;
 
@@ -21,13 +16,18 @@ int main(void) {
     DEBUGPRINT(2, "Stoppe Terminal Buffering.");
     disable_termbuffering();
     while (1) {
+        struct {
+            uint32_t capacity;
+            uint32_t size;
+            char *ptr;
+        } buf = {32, 0, calloc(buf.capacity, sizeof(char))};
         char c = 0;
         evalcallstack = 0;
 
         debuglevel = 0;
         while (c != '\n') {
             Result *res = eval(buf.ptr, 0, buf.size, "");
-            printf("\033[2K\r");
+            printf("\033[2K\r\033[E\033[2K\r\033[F");
             CYAN;
             printf(" > %s", buf.ptr);
             TERM;
@@ -36,14 +36,13 @@ int main(void) {
                 printf(" = %f", res->data.dval);
             } else {
                 RED;
-                printf("\t%s", res->data.msg);
+                printf("\n %s\033[F", res->data.msg);
             }
             TERM;
             fflush(stdout);
             free(res);
             if (read(STDIN_FILENO, &c, 1) == 0) {
                 restore_termbuffering();
-                printf("test");
                 free(buf.ptr);
                 TERM;
                 printf("\n");

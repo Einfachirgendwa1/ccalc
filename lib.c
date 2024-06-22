@@ -54,6 +54,9 @@ Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
     } left_value = {0, false, false};
 
     assert(left <= right);
+    if (left == right) {
+        RETURNERROR("Leere Eingabe");
+    }
 
     if (debuglevel >= 1) {
         DBGSTART;
