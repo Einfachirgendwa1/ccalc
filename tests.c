@@ -59,24 +59,27 @@ int main(void) {
 
 static bool res_assert_ok(char *buf, double val) {
     Result *res = eval(buf, 0, (uint32_t)strlen(buf) - 1, "Test");
+    bool rv;
     if (res->type == ERROR) {
         RED;
         printf("Fehler beim Runnen Tests: \"%s\" -> %s (%f erwartet.)", buf, res->data.msg, val);
         COLOREND;
-        return true;
+        rv = true;
     } else {
         if ((FEQ(res->data.dval, val))) {
             GREEN;
             printf("\"%s\" = %f ", buf, val);
             COLOREND;
-            return false;
+            rv = false;
         } else {
             RED;
             printf("\"%s\" sollte %f ergeben, gibt aber %f zurück", buf, val, res->data.dval);
             COLOREND;
-            return true;
+            rv = true;
         }
     }
+    free(res);
+    return rv;
 }
 
 static bool res_assert_err(char *buf) {
@@ -89,5 +92,6 @@ static bool res_assert_err(char *buf) {
         printf("\"%s\" -> %s", buf, res->data.msg);
     }
     COLOREND;
+    free(res);
     return res->type == DOUBLE;
 }
