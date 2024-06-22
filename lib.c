@@ -25,19 +25,22 @@ extern uint8_t debuglevel;
 
 #define PADDING 50
 
-#define DBGSTART                                                                     \
-    YELLOW;                                                                          \
-    switch (evalcallstack) {                                                         \
-        case 0:                                                                      \
-            LPAD(PADDING, "%d in %s in func main", __LINE__, __FILE__);              \
-            break;                                                                   \
-        case 1:                                                                      \
-            LPAD(PADDING, "%d in %s in func eval", __LINE__, __FILE__);              \
-            break;                                                                   \
-        default:                                                                     \
-            LPAD(PADDING, "%d in %s in eval %d", __LINE__, __FILE__, evalcallstack); \
-            break;                                                                   \
-    }                                                                                \
+#define DBGSTART                                                                                          \
+    YELLOW;                                                                                               \
+    for (uint32_t x = 0; x < evalcallstack; x++) {                                                        \
+        putchar(' ');                                                                                     \
+    }                                                                                                     \
+    switch (evalcallstack) {                                                                              \
+        case 0:                                                                                           \
+            LPAD(PADDING - (int)evalcallstack, "%d in %s in func main", __LINE__, __FILE__);              \
+            break;                                                                                        \
+        case 1:                                                                                           \
+            LPAD(PADDING - (int)evalcallstack, "%d in %s in func eval", __LINE__, __FILE__);              \
+            break;                                                                                        \
+        default:                                                                                          \
+            LPAD(PADDING - (int)evalcallstack, "%d in %s in eval %d", __LINE__, __FILE__, evalcallstack); \
+            break;                                                                                        \
+    }                                                                                                     \
     printf("DEBUG ");
 
 #define COLOREND \
@@ -118,7 +121,6 @@ static Result *err_res(char *msg) {
 
 static Result *eval(char *buf, uint32_t left, uint32_t right, char reason[]) {
     Result *res;
-    evalcallstack++;
     if (debuglevel >= 1) {
         DBGSTART;
         printf("Calle Eval");
@@ -128,6 +130,7 @@ static Result *eval(char *buf, uint32_t left, uint32_t right, char reason[]) {
         printf("...");
         COLOREND;
     }
+    evalcallstack++;
     while (isspace(buf[left])) {
         left++;
     }

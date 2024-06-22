@@ -36,7 +36,7 @@ int main(void) {
     for (uint32_t err = 0; err < sizeof(cerrs) / sizeof(cerrs[0]); err++) {
         btraces[sizeof(coks) / sizeof(coks[0]) + err] = res_assert_err(cerrs[err]) ? cerrs[err] : "";
     }
-    debuglevel = 1;
+    debuglevel = 2;
     for (uint32_t trace = 0; trace < sizeof(coks) / sizeof(coks[0]) + sizeof(cerrs) / sizeof(cerrs[0]); trace++) {
         if (btraces[trace][0] != '\0') {
             if (!traced) {
@@ -45,7 +45,7 @@ int main(void) {
             }
             printf("==== %s ====\n", btraces[trace]);
             evalcallstack = 0;
-            free(eval(btraces[trace], 0, (uint32_t)strlen(btraces[trace]), "Debug Traceback"));
+            free(eval(btraces[trace], 0, (uint32_t)strlen(btraces[trace]), " (Debug Traceback)"));
             printf("==== %s ====\n\n", btraces[trace]);
         }
     }
@@ -61,18 +61,18 @@ static bool res_assert_ok(char *buf, double val) {
     Result *res = eval(buf, 0, (uint32_t)strlen(buf) - 1, "Test");
     if (res->type == ERROR) {
         RED;
-        printf("Fehler beim Runnen Tests: %s -> %s (%f erwartet.)", buf, res->data.msg, val);
+        printf("Fehler beim Runnen Tests: \"%s\" -> %s (%f erwartet.)", buf, res->data.msg, val);
         COLOREND;
         return true;
     } else {
         if ((FEQ(res->data.dval, val))) {
             GREEN;
-            printf("%s = %f ", buf, val);
+            printf("\"%s\" = %f ", buf, val);
             COLOREND;
             return false;
         } else {
             RED;
-            printf("%s sollte %f ergeben, gibt aber %f zurück", buf, val, res->data.dval);
+            printf("\"%s\" sollte %f ergeben, gibt aber %f zurück", buf, val, res->data.dval);
             COLOREND;
             return true;
         }
@@ -83,10 +83,10 @@ static bool res_assert_err(char *buf) {
     Result *res = eval(buf, 0, (uint32_t)strlen(buf) - 1, "Test");
     if (res->type == DOUBLE) {
         RED;
-        printf("%s sollte einen Fehler erzeugen, stattdessen wird %f zurückgegeben.", buf, res->data.dval);
+        printf("\"%s\" sollte einen Fehler erzeugen, stattdessen wird %f zurückgegeben.", buf, res->data.dval);
     } else {
         GREEN;
-        printf("%s -> %s", buf, res->data.msg);
+        printf("\"%s\" -> %s", buf, res->data.msg);
     }
     COLOREND;
     return res->type == DOUBLE;
