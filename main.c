@@ -1,7 +1,9 @@
-#define DBGOVER 0
 #include "lib.c"
 
+#include <stdint.h>
 #include <string.h>
+
+uint8_t debuglevel = 1;
 
 int main(void) {
     char buf[32];
