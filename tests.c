@@ -27,7 +27,7 @@ int main(void) {
         "(1 + 1) / ",
         "(1 + 1) / 0"};
 
-    char *btraces[sizeof(coks) / sizeof(coks[0]) + sizeof(cerrs) / sizeof(cerrs[0])];
+    char *btraces[sizeof coks / sizeof coks[0] + sizeof cerrs / sizeof cerrs[0]];
     bool traced = false;
 
     for (uint32_t ok = 0; ok < sizeof(coks) / sizeof(coks[0]); ok++) {

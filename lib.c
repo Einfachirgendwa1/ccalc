@@ -53,6 +53,7 @@ extern uint8_t debuglevel;
     for (uint32_t didx = left; didx <= right; didx++) { \
         printf("%c", buf[didx]);                        \
     }
+#define FMTBOOL(b) b ? "true" : "false"
 
 #define RETURNERROR(x)                                     \
     DEBUGPRINT(1, "Fehler aufgetreten, returne Error..."); \
@@ -127,7 +128,8 @@ static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
     struct {
         double dval;
         bool exists;
-    } left_value = {0, false};
+        bool neg_vorzeichen_carry;
+    } left_value = {0, false, false};
 
     assert(left <= right);
 
@@ -146,12 +148,18 @@ static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
         }
 
         if (c >= '0' && c <= '9') {
+            bool vorz = left_value.dval < 0 || left_value.neg_vorzeichen_carry;
             left_value.exists = true;
             DEBUGPRINT(2, "========= CHARNUM START =========");
             DEBUGPRINT(2, "CHAR %c", c);
             DEBUGPRINT(2, "PRE  left_value.dval = %f", left_value.dval);
             left_value.dval *= 10;
-            left_value.dval += (c - '0');
+            DEBUGPRINT(2, "VORZ %s", FMTBOOL(vorz))
+            if (vorz) {
+                left_value.dval -= (c - '0');
+            } else {
+                left_value.dval += (c - '0');
+            }
             DEBUGPRINT(2, "POST left_value.dval = %f", left_value.dval);
             DEBUGPRINT(2, "========= CHARNUM STOP  =========");
         } else {
@@ -159,8 +167,8 @@ static Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
             double right_value;
             if (!left_value.exists) {
                 if (c == '-') {
-                    left_value.dval *= -1;
-                    DEBUGPRINT(2, "Minuszeichen gefunden, left_value.dval = %f", left_value.dval);
+                    left_value.neg_vorzeichen_carry = !left_value.neg_vorzeichen_carry;
+                    DEBUGPRINT(2, "Minuszeichen gefunden, left_value.neg_vorzeichen_carry = %s", FMTBOOL(left_value.neg_vorzeichen_carry));
                     continue;
                 }
 

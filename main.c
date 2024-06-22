@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-uint8_t debuglevel = 1;
+uint8_t debuglevel = 2;
 
 int main(void) {
     char buf[32];
