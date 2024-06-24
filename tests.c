@@ -1,6 +1,7 @@
-#include "lib.c"
+#include "lib.h"
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +10,7 @@
 static bool res_assert_ok(char *buf, double val);
 static bool res_assert_err(char *left);
 
-uint8_t debuglevel = 0;
+u8 debuglevel = 0;
 
 int main(void) {
     struct {
@@ -32,14 +33,14 @@ int main(void) {
     char *btraces[sizeof coks / sizeof coks[0] + sizeof cerrs / sizeof cerrs[0]];
     bool traced = false;
 
-    for (uint32_t ok = 0; ok < sizeof(coks) / sizeof(coks[0]); ok++) {
+    for (u32 ok = 0; ok < sizeof(coks) / sizeof(coks[0]); ok++) {
         btraces[ok] = res_assert_ok(coks[ok].calc, coks[ok].expected) ? coks[ok].calc : "";
     }
-    for (uint32_t err = 0; err < sizeof(cerrs) / sizeof(cerrs[0]); err++) {
+    for (u32 err = 0; err < sizeof(cerrs) / sizeof(cerrs[0]); err++) {
         btraces[sizeof(coks) / sizeof(coks[0]) + err] = res_assert_err(cerrs[err]) ? cerrs[err] : "";
     }
     debuglevel = 2;
-    for (uint32_t trace = 0; trace < sizeof(coks) / sizeof(coks[0]) + sizeof(cerrs) / sizeof(cerrs[0]); trace++) {
+    for (u32 trace = 0; trace < sizeof(coks) / sizeof(coks[0]) + sizeof(cerrs) / sizeof(cerrs[0]); trace++) {
         if (btraces[trace][0] != '\0') {
             if (!traced) {
                 printf("\n\nDebug Logs:\n");
@@ -47,7 +48,7 @@ int main(void) {
             }
             printf("==== %s ====\n", btraces[trace]);
             evalcallstack = 0;
-            free(eval(btraces[trace], 0, (uint32_t)strlen(btraces[trace]), " (Debug Traceback)"));
+            free(eval(btraces[trace], 0, (u32)strlen(btraces[trace]), " (Debug Traceback)"));
             printf("==== %s ====\n\n", btraces[trace]);
         }
     }
@@ -60,11 +61,11 @@ int main(void) {
 }
 
 static bool res_assert_ok(char *buf, double val) {
-    Result *res = eval(buf, 0, (uint32_t)strlen(buf) - 1, "Test");
+    Result *res = eval(buf, 0, (u32)strlen(buf), "Test");
     bool rv;
     if (res->type == ERROR) {
         RED;
-        printf("Fehler beim Runnen Tests: \"%s\" -> %s (%f erwartet.)", buf, res->data.msg, val);
+        printf("Fehler beim Runnen Tests: \"%s\" -> %s (%f erwartet.)", buf, res->data.errinfo.msg, val);
         COLOREND;
         rv = true;
     } else {
@@ -85,13 +86,13 @@ static bool res_assert_ok(char *buf, double val) {
 }
 
 static bool res_assert_err(char *buf) {
-    Result *res = eval(buf, 0, (uint32_t)strlen(buf) - 1, "Test");
+    Result *res = eval(buf, 0, (u32)strlen(buf) - 1, "Test");
     if (res->type == DOUBLE) {
         RED;
         printf("\"%s\" sollte einen Fehler erzeugen, stattdessen wird %f zurückgegeben.", buf, res->data.dval);
     } else {
         GREEN;
-        printf("\"%s\" -> %s", buf, res->data.msg);
+        printf("\"%s\" -> %s", buf, res->data.errinfo.msg);
     }
     COLOREND;
     free(res);

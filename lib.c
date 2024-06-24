@@ -9,7 +9,7 @@
 #include <termios.h>
 #include <unistd.h>
 
-uint32_t evalcallstack = 0;
+u32 evalcallstack = 0;
 struct termios orig_termios;
 
 Result *val_res(double val) {
@@ -19,18 +19,19 @@ Result *val_res(double val) {
     return new;
 }
 
-Result *err_res(char *msg) {
+Result *err_res(char *msg, uint32_t idx) {
     Result *new = malloc(sizeof(Result));
     new->type = ERROR;
-    new->data.msg = msg;
+    new->data.errinfo.msg = msg;
+    new->data.errinfo.idx = idx;
     return new;
 }
 
-Result *eval(char *buf, uint32_t left, uint32_t right, char reason[]) {
+Result *eval(char *buf, u32 left, u32 right, char reason[]) {
     Result *res;
     if (debuglevel >= 1) {
         DBGSTART;
-        printf("Calle Eval");
+        printf("Calle Eval mit buf=%s;left=%d;right=%d", buf, left, right);
         if (reason[0] != '\0') {
             printf("%s", reason);
         }
@@ -46,16 +47,15 @@ Result *eval(char *buf, uint32_t left, uint32_t right, char reason[]) {
     return res;
 }
 
-Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
+Result *direct_eval(char buf[32], u32 left, u32 right) {
     struct {
         double dval;
         bool exists;
         bool neg_vorzeichen_carry;
     } left_value = {0, false, false};
 
-    assert(left <= right);
-    if (left == right) {
-        RETURNERROR("Leere Eingabe");
+    if (buf[left] == '\0') {
+        RETURNERROR("Leere Eingabe", left);
     }
 
     if (debuglevel >= 1) {
@@ -66,7 +66,7 @@ Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
         COLOREND;
     }
 
-    for (uint32_t idx = left; idx <= right; idx++) {
+    for (u32 idx = left; idx <= right; idx++) {
         char c = buf[idx];
 
         if (isspace(c)) {
@@ -79,8 +79,8 @@ Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
             DEBUGPRINT(2, "========= CHARNUM START =========");
             DEBUGPRINT(2, "CHAR %c", c);
             DEBUGPRINT(2, "PRE  left_value.dval = %f", left_value.dval);
-            left_value.dval *= 10;
             DEBUGPRINT(2, "VORZ %s", FMTBOOL(vorz))
+            left_value.dval *= 10;
             if (vorz) {
                 left_value.dval -= (c - '0');
             } else {
@@ -100,17 +100,17 @@ Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
 
                 if (c == '*' || c == '/') {
                     DEBUGPRINT(1, "%c", c);
-                    RETURNERROR("Rechenzeichen ohne Zahl davor.");
+                    RETURNERROR("Rechenzeichen ohne Zahl davor.", idx);
                 }
             }
             if (c == '(') {
-                uint32_t start = idx + 1;
+                u32 start = idx + 1;
                 Result *res;
                 DEBUGPRINT(1, "Klammer gefunden.");
                 while (c != ')') {
                     c = buf[++idx];
                     if (c == '\0') {
-                        RETURNERROR("Klammer wurde nicht korrekt geschlossen");
+                        RETURNERROR("Klammer wurde nicht korrekt geschlossen", start - 1);
                     }
                 }
                 res = eval(buf, start, idx - 1, " um das Innere der Klammer auszurechnen");
@@ -138,7 +138,7 @@ Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
                 }
                 DEBUGPRINT(1, "Ende der Eingabe gefunden, returne gesammelte Zahl.");
                 if (!left_value.exists) {
-                    RETURNERROR("Unbekanntes Zeichen gefunden.");
+                    RETURNERROR("Unbekanntes Zeichen gefunden.", idx);
                 }
                 RETURNVALUE(left_value.dval);
             }
@@ -166,16 +166,16 @@ Result *direct_eval(char buf[32], uint32_t left, uint32_t right) {
                     RETURNVALUE(left_value.dval * right_value);
                 case '/':
                     if (FEQ(right_value, 0.0)) {
-                        RETURNERROR("Division durch 0");
+                        RETURNERROR("Division durch 0", idx);
                     }
                     RETURNVALUE(left_value.dval / right_value);
                 default:
-                    RETURNERROR("Unerwartes Rechenzeichen gefunden.");
+                    RETURNERROR("Unerwartes Rechenzeichen gefunden.", idx);
             }
         }
     }
     if (!left_value.exists) {
-        RETURNERROR("Expression erwartet, aber nichts gefunden.");
+        RETURNERROR("Expression erwartet, aber nichts gefunden.", right);
     }
     RETURNVALUE(left_value.dval);
 }
@@ -194,4 +194,13 @@ void disable_termbuffering(void) {
 
 void restore_termbuffering(void) {
     tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
+}
+
+#pragma clang diagnostic ignored "-Wunused-parameter"
+void exit_main(Buf buf) {
+    printf("\033[2K\r");
+    restore_termbuffering();
+    free(buf.ptr);
+    TERM;
+    exit(0);
 }
