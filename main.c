@@ -77,6 +77,11 @@ int main(void) {
                         exit_main(buf);
                         break;
                     }
+                case 12: // Ctrl+L
+                    {
+                        printf("\x1b[2J\x1b[H");
+                        break;
+                    }
                 case '\n':
                     {
                         break;
