@@ -16,7 +16,7 @@ int main(void) {
     DEBUGPRINT(2, "Stoppe Terminal Buffering.");
     disable_termbuffering();
     while (1) {
-        Buf buf = {32, 0, calloc(buf.capacity, sizeof(char))};
+        Buf buf = {32, 0, 0, calloc(buf.capacity, sizeof(char))};
         char c = 0;
         evalcallstack = 0;
 
@@ -86,15 +86,16 @@ int main(void) {
                     {
                         break;
                     }
+                case '(':
+                    {
+                        APPEND_CHAR(buf, '(');
+                        APPEND_CHAR(buf, ')');
+                        break;
+                    }
                 default:
                     {
-                        if (buf.size + 1 > buf.capacity) {
-                            buf.capacity *= 2;
-                            buf.ptr = realloc(buf.ptr, sizeof(char) * buf.capacity);
-                        }
-                        buf.ptr[buf.size] = c;
-                        buf.size++;
-                        buf.ptr[buf.size] = '\0';
+                        APPEND_CHAR(buf, c);
+                        break;
                     }
             }
         }

@@ -19,7 +19,7 @@ Result *val_res(double val) {
     return new;
 }
 
-Result *err_res(char *msg, uint32_t idx) {
+Result *err_res(char *msg, u32 idx) {
     Result *new = malloc(sizeof(Result));
     new->type = ERROR;
     new->data.errinfo.msg = msg;

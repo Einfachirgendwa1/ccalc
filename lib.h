@@ -74,6 +74,16 @@ extern struct termios orig_termios;
                                           \
     } while (0)
 
+#define APPEND_CHAR(buf, c)                                      \
+    if (buf.size + 1 > buf.capacity) {                           \
+        buf.capacity *= 2;                                       \
+        buf.ptr = realloc(buf.ptr, sizeof(char) * buf.capacity); \
+    }                                                            \
+    buf.ptr[buf.size] = c;                                       \
+    buf.size++;                                                  \
+    buf.cpos++;                                                  \
+    buf.ptr[buf.size] = '\0';
+
 #define FMTBOOL(b) b ? "true" : "false"
 
 #define RETURNERROR(msg, idx)                              \
@@ -101,7 +111,7 @@ typedef struct Result {
         double dval;
         struct {
             char *msg;
-            uint32_t idx;
+            u32 idx;
         } errinfo;
     } data;
 } Result;
@@ -111,13 +121,14 @@ void disable_termbuffering(void);
 void restore_termbuffering(void);
 
 Result *val_res(double val);
-Result *err_res(char *msg, uint32_t idx);
+Result *err_res(char *msg, u32 idx);
 Result *eval(char *buf, u32 left, u32 right, char reason[]);
 Result *direct_eval(char buf[32], u32 left, u32 right);
 
 typedef struct {
     u32 capacity;
     u32 size;
+    u32 cpos;
     char *ptr;
 } Buf;
 
