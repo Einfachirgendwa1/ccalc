@@ -78,7 +78,7 @@ int main(void) {
                     }
                 case 21: // C+U
                     {
-                        buf.ptr[0] = '\0';
+                        memset(buf.ptr, '\0', buf.capacity * sizeof(char));
                         buf.size = 0;
                         buf.cpos = 0;
                         break;
