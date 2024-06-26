@@ -21,6 +21,8 @@ int main(void) {
         char c = 0;
         evalcallstack = 0;
 
+        MEMCHECK_NULL(buf.ptr);
+
         debuglevel = 0;
         while (c != '\n') {
             Result *res = eval(buf.ptr, 0, buf.size, "");

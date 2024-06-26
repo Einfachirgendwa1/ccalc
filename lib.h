@@ -3,6 +3,7 @@
 
 typedef uint32_t u32;
 typedef uint8_t u8;
+typedef int8_t i8;
 
 #pragma clang diagnostic warning "-Weverything"
 #pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
@@ -78,6 +79,7 @@ extern struct termios orig_termios;
     if (buf.size + 1 > buf.capacity) {                           \
         buf.capacity *= 2;                                       \
         buf.ptr = realloc(buf.ptr, sizeof(char) * buf.capacity); \
+        MEMCHECK_NULL(buf.ptr);                                  \
     }                                                            \
     do {                                                         \
         char tmpchar = c;                                        \
@@ -91,6 +93,32 @@ extern struct termios orig_termios;
     buf.size++;                                                  \
     buf.cpos++;                                                  \
     buf.ptr[buf.size] = '\0';
+
+#define GET_PRIO(c, prio)  \
+    switch (c) {           \
+        case '+':          \
+        case '-':          \
+            {              \
+                prio = 0;  \
+                break;     \
+            }              \
+        case '*':          \
+        case '/':          \
+            {              \
+                prio = 1;  \
+                break;     \
+            }              \
+        default:           \
+            {              \
+                prio = -1; \
+            }              \
+    }
+
+#define MEMCHECK_NULL(ptr)             \
+    if (ptr == NULL) {                 \
+        printf("Kein Memory mehr!\n"); \
+        exit(1);                       \
+    }
 
 #define FMTBOOL(b) b ? "true" : "false"
 

@@ -14,6 +14,7 @@ struct termios orig_termios;
 
 Result *val_res(double val) {
     Result *new = malloc(sizeof(Result));
+    MEMCHECK_NULL(new);
     new->type = DOUBLE;
     new->data.dval = val;
     return new;
@@ -21,6 +22,7 @@ Result *val_res(double val) {
 
 Result *err_res(char *msg, u32 idx) {
     Result *new = malloc(sizeof(Result));
+    MEMCHECK_NULL(new);
     new->type = ERROR;
     new->data.errinfo.msg = msg;
     new->data.errinfo.idx = idx;
@@ -47,7 +49,7 @@ Result *eval(char *buf, u32 left, u32 right, char reason[]) {
     return res;
 }
 
-Result *direct_eval(char buf[32], u32 left, u32 right) {
+Result *direct_eval(char *buf, u32 left, u32 right) {
     struct {
         double dval;
         double mul;
@@ -70,6 +72,7 @@ Result *direct_eval(char buf[32], u32 left, u32 right) {
 
     for (u32 idx = left; idx <= right; idx++) {
         char c = buf[idx];
+        i8 prio;
 
         if (isspace(c)) {
             continue;
@@ -109,6 +112,7 @@ Result *direct_eval(char buf[32], u32 left, u32 right) {
         } else {
             Result *right_res;
             double right_value;
+            u32 end;
             if (!left_value.exists) {
                 if (c == '-') {
                     left_value.neg_vorzeichen_carry = !left_value.neg_vorzeichen_carry;
@@ -161,7 +165,27 @@ Result *direct_eval(char buf[32], u32 left, u32 right) {
                 RETURNVALUE(left_value.dval);
             }
             idx++;
-            right_res = eval(buf, idx, right, " um die rechte Seite der Rechnung herauszufinden");
+            end = right;
+            GET_PRIO(c, prio);
+            if (prio == -1) {
+                RETURNERROR("Unerwartes Rechenzeichen gefunden.", idx);
+            }
+            DEBUGPRINT(1, "Schaue nach Punkt vor Strich...");
+            DEBUGPRINT(1, "Aktuelles Rechenzeichen: %c mit Prio %d", c, prio);
+            for (u32 index = idx; index < right; index++) {
+                i8 op_prio;
+                GET_PRIO(buf[index], op_prio);
+                if (op_prio == -1) {
+                    continue;
+                }
+                DEBUGPRINT(2, "Rechenzeichen gefunden: %c mit prio %d", buf[index], op_prio);
+                if (op_prio <= prio) {
+                    DEBUGPRINT(1, "Rechenzeichen mit niedriegerer oder gleicher Prio gefunden: %c (Index %d) mit Prio %d", buf[index], index, op_prio);
+                    end = index;
+                    break;
+                }
+            }
+            right_res = eval(buf, idx, end, " um die rechte Seite der Rechnung herauszufinden");
             if (right_res->type == ERROR) {
                 return right_res;
             }
