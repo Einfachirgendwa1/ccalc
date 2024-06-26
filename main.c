@@ -104,6 +104,20 @@ int main(void) {
                         buf.cpos--;
                         break;
                     }
+                case 'h':
+                    {
+                        if (buf.cpos > 0) {
+                            buf.cpos--;
+                        }
+                        break;
+                    }
+                case 'l':
+                    {
+                        if (buf.cpos < buf.size) {
+                            buf.cpos++;
+                        }
+                        break;
+                    }
                 default:
                     {
                         APPEND_CHAR(buf, c);
