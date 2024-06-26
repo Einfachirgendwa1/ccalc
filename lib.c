@@ -50,9 +50,11 @@ Result *eval(char *buf, u32 left, u32 right, char reason[]) {
 Result *direct_eval(char buf[32], u32 left, u32 right) {
     struct {
         double dval;
+        double mul;
         bool exists;
         bool neg_vorzeichen_carry;
-    } left_value = {0, false, false};
+        bool comma;
+    } left_value = {0, 1, false, false, false};
 
     if (buf[left] == '\0') {
         RETURNERROR("Leere Eingabe", left);
@@ -73,6 +75,16 @@ Result *direct_eval(char buf[32], u32 left, u32 right) {
             continue;
         }
 
+        if (c == '.' || c == ',') {
+            DEBUGPRINT(1, "Komma gefunden");
+            if (left_value.comma) {
+                RETURNERROR("Mehrere Kommata in einer Zahl gefunden", idx);
+            }
+            left_value.comma = true;
+            left_value.mul = 1;
+            continue;
+        }
+
         if (c >= '0' && c <= '9') {
             bool vorz = left_value.dval < 0 || left_value.neg_vorzeichen_carry;
             left_value.exists = true;
@@ -80,11 +92,17 @@ Result *direct_eval(char buf[32], u32 left, u32 right) {
             DEBUGPRINT(2, "CHAR %c", c);
             DEBUGPRINT(2, "PRE  left_value.dval = %f", left_value.dval);
             DEBUGPRINT(2, "VORZ %s", FMTBOOL(vorz))
-            left_value.dval *= 10;
-            if (vorz) {
-                left_value.dval -= (c - '0');
+
+            if (left_value.comma) {
+                left_value.mul /= 10;
             } else {
-                left_value.dval += (c - '0');
+                left_value.dval *= 10;
+            }
+
+            if (vorz) {
+                left_value.dval -= (c - '0') * left_value.mul;
+            } else {
+                left_value.dval += (c - '0') * left_value.mul;
             }
             DEBUGPRINT(2, "POST left_value.dval = %f", left_value.dval);
             DEBUGPRINT(2, "========= CHARNUM STOP  =========");
