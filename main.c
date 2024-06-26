@@ -1,5 +1,6 @@
 #include "lib.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,7 +16,7 @@ int main(void) {
     DEBUGPRINT(1, "Debugprinting ist auf Level %d", debuglevel);
     DEBUGPRINT(2, "Stoppe Terminal Buffering.");
     disable_termbuffering();
-    while (1) {
+    while (true) {
         Buf buf = {32, 0, 0, calloc(buf.capacity, sizeof(char))};
         char c = 0;
         evalcallstack = 0;
@@ -79,6 +80,7 @@ int main(void) {
                     {
                         buf.ptr[0] = '\0';
                         buf.size = 0;
+                        buf.cpos = 0;
                         break;
                     }
                 case 4: // Ctrl+D
