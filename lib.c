@@ -196,7 +196,6 @@ void restore_termbuffering(void) {
     tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
 }
 
-#pragma clang diagnostic ignored "-Wunused-parameter"
 void exit_main(Buf buf) {
     printf("\033[2K\r");
     restore_termbuffering();
