@@ -79,7 +79,15 @@ extern struct termios orig_termios;
         buf.capacity *= 2;                                       \
         buf.ptr = realloc(buf.ptr, sizeof(char) * buf.capacity); \
     }                                                            \
-    buf.ptr[buf.size] = c;                                       \
+    do {                                                         \
+        char tmpchar = c;                                        \
+        for (u32 x = buf.cpos; x < buf.size; x++) {              \
+            char tmpchar2 = buf.ptr[x];                          \
+            buf.ptr[x] = tmpchar;                                \
+            tmpchar = tmpchar2;                                  \
+        }                                                        \
+        buf.ptr[buf.size] = tmpchar;                             \
+    } while (0);                                                 \
     buf.size++;                                                  \
     buf.cpos++;                                                  \
     buf.ptr[buf.size] = '\0';
