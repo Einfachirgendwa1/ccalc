@@ -23,25 +23,30 @@ int main(void) {
         debuglevel = 0;
         while (c != '\n') {
             Result *res = eval(buf.ptr, 0, buf.size, "");
+            char tchar1;
             printf("\033[2K\r\033[E\033[2K\r\033[F"); // Frag mich nicht, ich habs auch vergessen
             CYAN;
-            printf(" > %s\033[s    ", buf.ptr);
+            tchar1 = buf.ptr[buf.cpos];
+            buf.ptr[buf.cpos] = '\0';
+            printf(" > %s\033[s", buf.ptr);
+            buf.ptr[buf.cpos] = tchar1;
+            printf("%s   ", buf.ptr + buf.cpos);
             TERM;
             if (res->type == DOUBLE) {
                 GREEN;
                 printf(" = %f", res->data.dval);
             } else {
-                char tchar;
+                char tchar2;
                 if (res->data.errinfo.idx <= buf.size) {
                     RED;
                     printf("\n %s\033[F", res->data.errinfo.msg);
                     CYAN;
-                    tchar = buf.ptr[res->data.errinfo.idx];
+                    tchar2 = buf.ptr[res->data.errinfo.idx];
                     buf.ptr[res->data.errinfo.idx] = '\0';
                     printf(" > %s", buf.ptr);
-                    buf.ptr[res->data.errinfo.idx] = tchar;
+                    buf.ptr[res->data.errinfo.idx] = tchar2;
                     RED;
-                    printf("%c", tchar);
+                    printf("%c", tchar2);
                     CYAN;
                     printf("%s ", buf.ptr + res->data.errinfo.idx + 1);
                 } else {
@@ -62,6 +67,10 @@ int main(void) {
                 case 127: // Delete Key
                     {
                         if (buf.size > 0) {
+                            for (u32 x = buf.cpos-- - 1; x < buf.size; x++) {
+                                // printf("Pulle %c auf %c\n", buf.ptr[x + 1], buf.ptr[x]);
+                                buf.ptr[x] = buf.ptr[x + 1];
+                            }
                             buf.ptr[--buf.size] = '\0';
                         }
                         break;
@@ -90,6 +99,7 @@ int main(void) {
                     {
                         APPEND_CHAR(buf, '(');
                         APPEND_CHAR(buf, ')');
+                        buf.cpos--;
                         break;
                     }
                 default:
