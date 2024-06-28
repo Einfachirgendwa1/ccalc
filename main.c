@@ -7,7 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 
-u8 debuglevel = 1;
+u8 debuglevel = 0;
 
 int main(void) {
     Result *result;
@@ -23,7 +23,6 @@ int main(void) {
 
         MEMCHECK_NULL(buf.ptr);
 
-        debuglevel = 0;
         while (c != '\n') {
             Result *res = eval(buf.ptr, 0, buf.size, "");
             char tchar1;
@@ -78,7 +77,7 @@ int main(void) {
                         }
                         break;
                     }
-                case 21: // C+U
+                case 21: // Ctrl+U
                     {
                         memset(buf.ptr, '\0', buf.capacity * sizeof(char));
                         buf.size = 0;
@@ -127,7 +126,6 @@ int main(void) {
                     }
             }
         }
-        debuglevel = 1;
 
         COLOREND;
 
